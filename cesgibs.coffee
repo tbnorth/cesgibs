@@ -4,13 +4,27 @@ last_date_change_time = Date.now()
 ## date when imagery last changed
 last_date = null
 
-map_time = (layer_name) -> 
+resolutions =
+    "250m":
+        tileMatrixSetID: "EPSG4326_250m"
+        maximumLevel: 8
+    "500m":
+        tileMatrixSetID: "EPSG4326_500m"
+        maximumLevel: 7
+    "1km":
+        tileMatrixSetID: "EPSG4326_1km"
+        maximumLevel: 6
+    "2km":
+        tileMatrixSetID: "EPSG4326_2km"
+        maximumLevel: 5
 
-    console.log "Building", layer_name
-    
+map_time = (meta) ->
+
+    console.log "Building", meta.layer_name
+
     func = ->
         ## build function that returns an imagery provider for a particular day
-    
+
         time = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)
         time = "#{time.year}-#{('0'+time.month)[-2..]}-#{('0'+time.day)[-2..]}"
 
@@ -19,30 +33,28 @@ map_time = (layer_name) ->
         culls = []
         for n in [0..layers.length]
             layer = layers.get(n)
-            if not layer
-                continue
-            if layer.imageryProvider._date_loader
+            if layer and layer.imageryProvider and layer.imageryProvider._date_loader
                 culls.push layer
         for cull in culls
             layers.remove cull
 
         prov = new Cesium.WebMapTileServiceImageryProvider
             url: "//map1.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi?TIME=#{time}",
-            layer: layer_name,
+            layer: meta.layer_name,
             style: "",
-            format: "image/jpeg",
-            tileMatrixSetID: "EPSG4326_250m",
-            maximumLevel: 8,
+            format: meta.format,
+            tileMatrixSetID: resolutions[meta.res].tileMatrixSetID,
+            maximumLevel: resolutions[meta.res].maximumLevel,
             tileWidth: 256,
             tileHeight: 256,
             tilingScheme: gibs.GeographicTilingScheme()
-    
+
         prov._date_loader = func
-    
+
         viewer._cesgibs_active = true
-    
+
         return prov
-        
+
     return func
 
 cesgibs_init = ->
@@ -50,11 +62,47 @@ cesgibs_init = ->
     gibs_layers = [
         name: 'Terra imagery',
         tooltip: "Daily MODIS Terra images"
-        layer_name: "MODIS_Terra_CorrectedReflectance_TrueColor"
+        meta:
+            layer_name: "MODIS_Terra_CorrectedReflectance_TrueColor"
+            res: '250m'
+            format: "image/jpeg"
       ,
         name: 'Aqua imagery',
         tooltip: "Daily MODIS Aqua images"
-        layer_name: "MODIS_Aqua_CorrectedReflectance_TrueColor"
+        meta:
+            layer_name: "MODIS_Aqua_CorrectedReflectance_TrueColor"
+            res: '250m'
+            format: "image/jpeg"
+      ,
+        name: 'Sea Surface Temp MUR',
+        tooltip: "GHRSST_L4_MUR_Sea_Surface_Temperature"
+        meta:
+            layer_name: "GHRSST_L4_MUR_Sea_Surface_Temperature"
+            res: '1km'
+            format: "image/png"
+      ,
+        name: 'Sea Surface Temp G1SST',
+        tooltip: "GHRSST_L4_G1SST_Sea_Surface_Temperature"
+        meta:
+            layer_name: "GHRSST_L4_G1SST_Sea_Surface_Temperature"
+            res: '1km'
+            format: "image/png"
+      ,
+        name: 'Terra chl',
+        tooltip: "MODIS Terra Chlorophyll"
+        meta:
+            layer_name: "MODIS_Terra_Chlorophyll_A"
+            res: '1km'
+            format: "image/png"
+      ,
+        name: 'Aqua chl',
+        tooltip: "MODIS Aqua Chlorophyll"
+        meta:
+            layer_name: "MODIS_Aqua_Chlorophyll_A"
+            res: '1km'
+            format: "image/png"
+
+
     ]
 
     last_date = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)
@@ -68,7 +116,7 @@ cesgibs_init = ->
             name: layer.name
             tooltip: layer.tooltip
             iconUrl: "http://cesiumjs.org/releases/1.26/Build/Cesium/Widgets/Images/ImageryProviders/mapboxSatellite.png"
-            creationFunction: map_time layer.layer_name
+            creationFunction: map_time layer.meta
         console.log 'XX', layer.layer_name
 
     viewer.clock.onTick.addEventListener ->

@@ -23,6 +23,8 @@ map_time = ->
 
     prov._date_loader = map_time
 
+    viewer._cesgibs_active = true
+
     return prov
 
 cesgibs_init = ->
@@ -40,11 +42,35 @@ cesgibs_init = ->
     viewer.clock.onTick.addEventListener ->
         ## see if it's a different day, and check for daily layers
 
+        if not viewer._cesgibs_active
+            return
+
         # see if 1 second has elapsed since last image change
         now = Date.now()
         if now - last_date_change_time < 1000
             return
         last_date_change_time = now
+
+        layers = viewer.scene.imageryLayers
+
+        # when the day changes and we add a new layer, its "baselayerness"
+        # is lost, despite attempt below, so switching to a non-gibs
+        # baselayer doesn't unload our layer, so search layers for a
+        # non-gibs baselayer, and if found, remove ours
+        base_layer_seen = false
+        our_layer = null
+        for n in [0..layers.length]
+            layer = layers.get(n)
+            if not layer
+                continue
+            if layer._isBaseLayer and not layer.imageryProvider._date_loader
+                base_layer_seen = true
+            if layer.imageryProvider._date_loader
+                our_layer = layer
+        if base_layer_seen and our_layer
+            viewer.scene.imageryLayers.remove our_layer
+            viewer._cesgibs_active = false
+            return
 
         now = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)
         day_change = (
@@ -55,12 +81,14 @@ cesgibs_init = ->
         if day_change
             last_date = now
 
-            layers = viewer.scene.imageryLayers
-            console.log layers
             for n in [0..layers.length]
                 layer = layers.get(n)
                 if layer and layer.imageryProvider._date_loader
                     layers.remove layer
-                    layers.addImageryProvider layer.imageryProvider._date_loader()
+                    # layers.addImageryProvider layer.imageryProvider._date_loader()
+                    new_layer = new Cesium.ImageryLayer layer.imageryProvider._date_loader()
+                    layers.add new_layer
+                    # this is insufficient / too soon, hence "our_layer" code above
+                    # new_layer._isBaseLayer = true
                     break
 

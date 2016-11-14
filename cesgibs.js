@@ -21,6 +21,7 @@ map_time = function() {
     tilingScheme: gibs.GeographicTilingScheme()
   });
   prov._date_loader = map_time;
+  viewer._cesgibs_active = true;
   return prov;
 };
 
@@ -35,24 +36,46 @@ cesgibs_init = function() {
     creationFunction: map_time
   }));
   return viewer.clock.onTick.addEventListener(function() {
-    var day_change, layer, layers, n, now, _i, _ref, _results;
+    var base_layer_seen, day_change, layer, layers, n, new_layer, now, our_layer, _i, _j, _ref, _ref1, _results;
+    if (!viewer._cesgibs_active) {
+      return;
+    }
     now = Date.now();
     if (now - last_date_change_time < 1000) {
       return;
     }
     last_date_change_time = now;
+    layers = viewer.scene.imageryLayers;
+    base_layer_seen = false;
+    our_layer = null;
+    for (n = _i = 0, _ref = layers.length; 0 <= _ref ? _i <= _ref : _i >= _ref; n = 0 <= _ref ? ++_i : --_i) {
+      layer = layers.get(n);
+      if (!layer) {
+        continue;
+      }
+      if (layer._isBaseLayer && !layer.imageryProvider._date_loader) {
+        base_layer_seen = true;
+      }
+      if (layer.imageryProvider._date_loader) {
+        our_layer = layer;
+      }
+    }
+    if (base_layer_seen && our_layer) {
+      viewer.scene.imageryLayers.remove(our_layer);
+      viewer._cesgibs_active = false;
+      return;
+    }
     now = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime);
     day_change = now.day !== last_date.day || now.month !== last_date.month || now.year !== last_date.year;
     if (day_change) {
       last_date = now;
-      layers = viewer.scene.imageryLayers;
-      console.log(layers);
       _results = [];
-      for (n = _i = 0, _ref = layers.length; 0 <= _ref ? _i <= _ref : _i >= _ref; n = 0 <= _ref ? ++_i : --_i) {
+      for (n = _j = 0, _ref1 = layers.length; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; n = 0 <= _ref1 ? ++_j : --_j) {
         layer = layers.get(n);
         if (layer && layer.imageryProvider._date_loader) {
           layers.remove(layer);
-          layers.addImageryProvider(layer.imageryProvider._date_loader());
+          new_layer = new Cesium.ImageryLayer(layer.imageryProvider._date_loader());
+          layers.add(new_layer);
           break;
         } else {
           _results.push(void 0);

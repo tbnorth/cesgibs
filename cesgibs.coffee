@@ -1,8 +1,55 @@
 
-## time of last imagery change - track to limit request rate
-last_date_change_time = Date.now()
-## date when imagery last changed
-last_date = null
+gibs_layers = [
+    name: 'Terra imagery',
+    tooltip: "Daily MODIS Terra images"
+    meta:
+        layer_name: "MODIS_Terra_CorrectedReflectance_TrueColor"
+        res: '250m'
+        format: "image/jpeg"
+  ,
+    name: 'Aqua imagery',
+    tooltip: "Daily MODIS Aqua images"
+    meta:
+        layer_name: "MODIS_Aqua_CorrectedReflectance_TrueColor"
+        res: '250m'
+        format: "image/jpeg"
+  ,
+    name: 'VIIRS imagery',
+    tooltip: "Daily VIIRS images"
+    meta:
+        layer_name: "VIIRS_SNPP_CorrectedReflectance_TrueColor"
+        res: '250m'
+        format: "image/jpeg"
+  ,
+    name: 'Sea Surface Temp MUR',
+    tooltip: "GHRSST_L4_MUR_Sea_Surface_Temperature"
+    meta:
+        layer_name: "GHRSST_L4_MUR_Sea_Surface_Temperature"
+        res: '1km'
+        format: "image/png"
+  ,
+    name: 'Sea Surface Temp G1SST',
+    tooltip: "GHRSST_L4_G1SST_Sea_Surface_Temperature"
+    meta:
+        layer_name: "GHRSST_L4_G1SST_Sea_Surface_Temperature"
+        res: '1km'
+        format: "image/png"
+  ,
+    name: 'Terra chl',
+    tooltip: "MODIS Terra Chlorophyll"
+    meta:
+        layer_name: "MODIS_Terra_Chlorophyll_A"
+        res: '1km'
+        format: "image/png"
+  ,
+    name: 'Aqua chl',
+    tooltip: "MODIS Aqua Chlorophyll"
+    meta:
+        layer_name: "MODIS_Aqua_Chlorophyll_A"
+        res: '1km'
+        format: "image/png"
+  ,
+]
 
 resolutions =
     "250m":
@@ -18,7 +65,56 @@ resolutions =
         tileMatrixSetID: "EPSG4326_2km"
         maximumLevel: 5
 
-cesgibs_imgadj = (ele_id) ->
+css = """
+<style>
+    /* style inserted by cesgibs.js (from cesgibs.coffee) */
+    .cesgibs_imgadj {
+        background: rgba(90, 90, 90, 0.8);
+        padding: 4px;
+        border-radius: 4px;
+        font-size: 60%;
+    }
+    .cesgibs_imgadj input {
+        vertical-align: middle;
+        padding-top: 1px;
+        padding-bottom: 1px;
+    }
+    .cesgibs_imgadj td {
+        font-size: 60%;
+    }
+    .cesgibs_imgadj input[type=range] {
+        height: 8;
+    }
+</style>
+"""
+
+template = """
+<!-- table inserted by cesgibs.js (from cesgibs.coffee) -->
+<table><tbody><tr><td>Brightness</td>
+<td><input type="range" min="0" max="3" step="0.02" data-bind="value: brightness, valueUpdate: 'input'">
+<input type="text" size="5" data-bind="value: brightness"></td></tr>
+<tr><td>Contrast</td><td>
+<input type="range" min="0" max="3" step="0.02" data-bind="value: contrast, valueUpdate: 'input'">
+<input type="text" size="5" data-bind="value: contrast"></td></tr>
+<tr><td>Hue</td><td>
+<input type="range" min="0" max="3" step="0.02" data-bind="value: hue, valueUpdate: 'input'">
+<input type="text" size="5" data-bind="value: hue"></td></tr>
+<tr><td>Saturation</td><td>
+<input type="range" min="0" max="3" step="0.02" data-bind="value: saturation, valueUpdate: 'input'">
+<input type="text" size="5" data-bind="value: saturation"></td></tr>
+<tr><td>Gamma</td><td>
+<input type="range" min="0" max="3" step="0.02" data-bind="value: gamma, valueUpdate: 'input'">
+<input type="text" size="5" data-bind="value: gamma"></td></tr></tbody></table>
+"""
+
+## time of last imagery change - track to limit request rate
+last_date_change_time = Date.now()
+## date when imagery last changed
+last_date = null
+
+viewer = null
+
+@imgadj = (ele_id) ->
 
     # from the Cesium Sandcastle demo
     imageryLayers = viewer.imageryLayers
@@ -52,7 +148,6 @@ cesgibs_imgadj = (ele_id) ->
 
     for attr of viewModel
         subscribeLayerParameter attr
-        console.log attr
 
     # Make the viewModel react to base layer changes.
     updateViewModel = ->
@@ -103,103 +198,9 @@ map_time = (meta) ->
 
     return func
 
-template = """
-<!-- table inserted by cesgibs.js (from cesgibs.coffee) -->
-<table><tbody><tr><td>Brightness</td>
-<td><input type="range" min="0" max="3" step="0.02" data-bind="value: brightness, valueUpdate: 'input'">
-<input type="text" size="5" data-bind="value: brightness"></td></tr>
-<tr><td>Contrast</td><td>
-<input type="range" min="0" max="3" step="0.02" data-bind="value: contrast, valueUpdate: 'input'">
-<input type="text" size="5" data-bind="value: contrast"></td></tr>
-<tr><td>Hue</td><td>
-<input type="range" min="0" max="3" step="0.02" data-bind="value: hue, valueUpdate: 'input'">
-<input type="text" size="5" data-bind="value: hue"></td></tr>
-<tr><td>Saturation</td><td>
-<input type="range" min="0" max="3" step="0.02" data-bind="value: saturation, valueUpdate: 'input'">
-<input type="text" size="5" data-bind="value: saturation"></td></tr>
-<tr><td>Gamma</td><td>
-<input type="range" min="0" max="3" step="0.02" data-bind="value: gamma, valueUpdate: 'input'">
-<input type="text" size="5" data-bind="value: gamma"></td></tr></tbody></table>
-"""
+@init = (cesium_viewer) ->
 
-css = """
-<style>
-    /* style inserted by cesgibs.js (from cesgibs.coffee) */
-    .cesgibs_imgadj {
-        background: rgba(90, 90, 90, 0.8);
-        padding: 4px;
-        border-radius: 4px;
-        font-size: 60%;
-    }
-    .cesgibs_imgadj input {
-        vertical-align: middle;
-        padding-top: 1px;
-        padding-bottom: 1px;
-    }
-    .cesgibs_imgadj td {
-        font-size: 60%;
-    }
-    .cesgibs_imgadj input[type=range] {
-        height: 8;
-    }
-</style>
-"""
-
-cesgibs_init = ->
-
-    gibs_layers = [
-        name: 'Terra imagery',
-        tooltip: "Daily MODIS Terra images"
-        meta:
-            layer_name: "MODIS_Terra_CorrectedReflectance_TrueColor"
-            res: '250m'
-            format: "image/jpeg"
-      ,
-        name: 'Aqua imagery',
-        tooltip: "Daily MODIS Aqua images"
-        meta:
-            layer_name: "MODIS_Aqua_CorrectedReflectance_TrueColor"
-            res: '250m'
-            format: "image/jpeg"
-      ,
-        name: 'VIIRS imagery',
-        tooltip: "Daily VIIRS images"
-        meta:
-            layer_name: "VIIRS_SNPP_CorrectedReflectance_TrueColor"
-            res: '250m'
-            format: "image/jpeg"
-      ,
-        name: 'Sea Surface Temp MUR',
-        tooltip: "GHRSST_L4_MUR_Sea_Surface_Temperature"
-        meta:
-            layer_name: "GHRSST_L4_MUR_Sea_Surface_Temperature"
-            res: '1km'
-            format: "image/png"
-      ,
-        name: 'Sea Surface Temp G1SST',
-        tooltip: "GHRSST_L4_G1SST_Sea_Surface_Temperature"
-        meta:
-            layer_name: "GHRSST_L4_G1SST_Sea_Surface_Temperature"
-            res: '1km'
-            format: "image/png"
-      ,
-        name: 'Terra chl',
-        tooltip: "MODIS Terra Chlorophyll"
-        meta:
-            layer_name: "MODIS_Terra_Chlorophyll_A"
-            res: '1km'
-            format: "image/png"
-      ,
-        name: 'Aqua chl',
-        tooltip: "MODIS Aqua Chlorophyll"
-        meta:
-            layer_name: "MODIS_Aqua_Chlorophyll_A"
-            res: '1km'
-            format: "image/png"
-
-
-    ]
-
+    viewer = cesium_viewer
     last_date = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)
 
     ## add a base layer icon
@@ -262,4 +263,6 @@ cesgibs_init = ->
                     # this is insufficient / too soon, hence "our_layer" code above
                     # new_layer._isBaseLayer = true
                     break
+
+window.CesGibs = this
 

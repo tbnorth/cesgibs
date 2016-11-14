@@ -4,40 +4,56 @@ last_date_change_time = Date.now()
 ## date when imagery last changed
 last_date = null
 
-map_time = ->
-    ## build an imagery provider for a particular day
+map_time = (layer) -> 
 
-    time = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)
-    time = "#{time.year}-#{('0'+time.month)[-2..]}-#{('0'+time.day)[-2..]}"
-
-    prov = new Cesium.WebMapTileServiceImageryProvider
-        url: "//map1.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi?TIME=#{time}",
-        layer: "MODIS_Terra_CorrectedReflectance_TrueColor",
-        style: "",
-        format: "image/jpeg",
-        tileMatrixSetID: "EPSG4326_250m",
-        maximumLevel: 8,
-        tileWidth: 256,
-        tileHeight: 256,
-        tilingScheme: gibs.GeographicTilingScheme()
-
-    prov._date_loader = map_time
-
-    viewer._cesgibs_active = true
-
-    return prov
+    console.log "Building", layer
+    
+    func = ->
+        ## build function that returns an imagery provider for a particular day
+    
+        time = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)
+        time = "#{time.year}-#{('0'+time.month)[-2..]}-#{('0'+time.day)[-2..]}"
+    
+        prov = new Cesium.WebMapTileServiceImageryProvider
+            url: "//map1.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi?TIME=#{time}",
+            layer: layer,
+            style: "",
+            format: "image/jpeg",
+            tileMatrixSetID: "EPSG4326_250m",
+            maximumLevel: 8,
+            tileWidth: 256,
+            tileHeight: 256,
+            tilingScheme: gibs.GeographicTilingScheme()
+    
+        prov._date_loader = func
+    
+        viewer._cesgibs_active = true
+    
+        return prov
+        
+    return func
 
 cesgibs_init = ->
+
+    gibs_layers = [
+        name: 'Terra imagery',
+        tooltip: "Daily MODIS Terra images"
+        layer_name: "MODIS_Terra_CorrectedReflectance_TrueColor"
+    ]
 
     last_date = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)
 
     ## add a base layer icon
     arr = viewer.baseLayerPicker.viewModel.imageryProviderViewModels
-    arr.push new Cesium.ProviderViewModel
-        name: 'MODIS imagery'
-        tooltip: "Daily MODIS images"
-        iconUrl: "http://cesiumjs.org/releases/1.26/Build/Cesium/Widgets/Images/ImageryProviders/mapboxSatellite.png"
-        creationFunction: map_time
+    for layer in gibs_layers
+        console.log layer
+        console.log 'YY', layer.layer_name
+        arr.push new Cesium.ProviderViewModel
+            name: layer.name
+            tooltip: layer.tooltip
+            iconUrl: "http://cesiumjs.org/releases/1.26/Build/Cesium/Widgets/Images/ImageryProviders/mapboxSatellite.png"
+            creationFunction: map_time layer.layer_name
+        console.log 'XX', layer.layer_name
 
     viewer.clock.onTick.addEventListener ->
         ## see if it's a different day, and check for daily layers

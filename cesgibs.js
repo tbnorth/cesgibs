@@ -5,38 +5,56 @@ last_date_change_time = Date.now();
 
 last_date = null;
 
-map_time = function() {
-  var prov, time;
-  time = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime);
-  time = "" + time.year + "-" + ('0' + time.month).slice(-2) + "-" + ('0' + time.day).slice(-2);
-  prov = new Cesium.WebMapTileServiceImageryProvider({
-    url: "//map1.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi?TIME=" + time,
-    layer: "MODIS_Terra_CorrectedReflectance_TrueColor",
-    style: "",
-    format: "image/jpeg",
-    tileMatrixSetID: "EPSG4326_250m",
-    maximumLevel: 8,
-    tileWidth: 256,
-    tileHeight: 256,
-    tilingScheme: gibs.GeographicTilingScheme()
-  });
-  prov._date_loader = map_time;
-  viewer._cesgibs_active = true;
-  return prov;
+map_time = function(layer) {
+  var func;
+  console.log("Building", layer);
+  func = function() {
+    var prov, time;
+    time = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime);
+    time = "" + time.year + "-" + ('0' + time.month).slice(-2) + "-" + ('0' + time.day).slice(-2);
+    prov = new Cesium.WebMapTileServiceImageryProvider({
+      url: "//map1.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi?TIME=" + time,
+      layer: layer,
+      style: "",
+      format: "image/jpeg",
+      tileMatrixSetID: "EPSG4326_250m",
+      maximumLevel: 8,
+      tileWidth: 256,
+      tileHeight: 256,
+      tilingScheme: gibs.GeographicTilingScheme()
+    });
+    prov._date_loader = func;
+    viewer._cesgibs_active = true;
+    return prov;
+  };
+  return func;
 };
 
 cesgibs_init = function() {
-  var arr;
+  var arr, gibs_layers, layer, _i, _len;
+  gibs_layers = [
+    {
+      name: 'Terra imagery',
+      tooltip: "Daily MODIS Terra images",
+      layer_name: "MODIS_Terra_CorrectedReflectance_TrueColor"
+    }
+  ];
   last_date = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime);
   arr = viewer.baseLayerPicker.viewModel.imageryProviderViewModels;
-  arr.push(new Cesium.ProviderViewModel({
-    name: 'MODIS imagery',
-    tooltip: "Daily MODIS images",
-    iconUrl: "http://cesiumjs.org/releases/1.26/Build/Cesium/Widgets/Images/ImageryProviders/mapboxSatellite.png",
-    creationFunction: map_time
-  }));
+  for (_i = 0, _len = gibs_layers.length; _i < _len; _i++) {
+    layer = gibs_layers[_i];
+    console.log(layer);
+    console.log('YY', layer.layer_name);
+    arr.push(new Cesium.ProviderViewModel({
+      name: layer.name,
+      tooltip: layer.tooltip,
+      iconUrl: "http://cesiumjs.org/releases/1.26/Build/Cesium/Widgets/Images/ImageryProviders/mapboxSatellite.png",
+      creationFunction: map_time(layer.layer_name)
+    }));
+    console.log('XX', layer.layer_name);
+  }
   return viewer.clock.onTick.addEventListener(function() {
-    var base_layer_seen, day_change, layer, layers, n, new_layer, now, our_layer, _i, _j, _ref, _ref1, _results;
+    var base_layer_seen, day_change, layers, n, new_layer, now, our_layer, _j, _k, _ref, _ref1, _results;
     if (!viewer._cesgibs_active) {
       return;
     }
@@ -48,7 +66,7 @@ cesgibs_init = function() {
     layers = viewer.scene.imageryLayers;
     base_layer_seen = false;
     our_layer = null;
-    for (n = _i = 0, _ref = layers.length; 0 <= _ref ? _i <= _ref : _i >= _ref; n = 0 <= _ref ? ++_i : --_i) {
+    for (n = _j = 0, _ref = layers.length; 0 <= _ref ? _j <= _ref : _j >= _ref; n = 0 <= _ref ? ++_j : --_j) {
       layer = layers.get(n);
       if (!layer) {
         continue;
@@ -70,7 +88,7 @@ cesgibs_init = function() {
     if (day_change) {
       last_date = now;
       _results = [];
-      for (n = _j = 0, _ref1 = layers.length; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; n = 0 <= _ref1 ? ++_j : --_j) {
+      for (n = _k = 0, _ref1 = layers.length; 0 <= _ref1 ? _k <= _ref1 : _k >= _ref1; n = 0 <= _ref1 ? ++_k : --_k) {
         layer = layers.get(n);
         if (layer && layer.imageryProvider._date_loader) {
           layers.remove(layer);

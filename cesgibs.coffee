@@ -4,19 +4,31 @@ last_date_change_time = Date.now()
 ## date when imagery last changed
 last_date = null
 
-map_time = (layer) -> 
+map_time = (layer_name) -> 
 
-    console.log "Building", layer
+    console.log "Building", layer_name
     
     func = ->
         ## build function that returns an imagery provider for a particular day
     
         time = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)
         time = "#{time.year}-#{('0'+time.month)[-2..]}-#{('0'+time.day)[-2..]}"
-    
+
+        # remove any existing gibs layers
+        layers = viewer.scene.imageryLayers
+        culls = []
+        for n in [0..layers.length]
+            layer = layers.get(n)
+            if not layer
+                continue
+            if layer.imageryProvider._date_loader
+                culls.push layer
+        for cull in culls
+            layers.remove cull
+
         prov = new Cesium.WebMapTileServiceImageryProvider
             url: "//map1.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi?TIME=#{time}",
-            layer: layer,
+            layer: layer_name,
             style: "",
             format: "image/jpeg",
             tileMatrixSetID: "EPSG4326_250m",
@@ -39,6 +51,10 @@ cesgibs_init = ->
         name: 'Terra imagery',
         tooltip: "Daily MODIS Terra images"
         layer_name: "MODIS_Terra_CorrectedReflectance_TrueColor"
+      ,
+        name: 'Aqua imagery',
+        tooltip: "Daily MODIS Aqua images"
+        layer_name: "MODIS_Aqua_CorrectedReflectance_TrueColor"
     ]
 
     last_date = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)

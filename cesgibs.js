@@ -5,16 +5,31 @@ last_date_change_time = Date.now();
 
 last_date = null;
 
-map_time = function(layer) {
+map_time = function(layer_name) {
   var func;
-  console.log("Building", layer);
+  console.log("Building", layer_name);
   func = function() {
-    var prov, time;
+    var cull, culls, layer, layers, n, prov, time, _i, _j, _len, _ref;
     time = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime);
     time = "" + time.year + "-" + ('0' + time.month).slice(-2) + "-" + ('0' + time.day).slice(-2);
+    layers = viewer.scene.imageryLayers;
+    culls = [];
+    for (n = _i = 0, _ref = layers.length; 0 <= _ref ? _i <= _ref : _i >= _ref; n = 0 <= _ref ? ++_i : --_i) {
+      layer = layers.get(n);
+      if (!layer) {
+        continue;
+      }
+      if (layer.imageryProvider._date_loader) {
+        culls.push(layer);
+      }
+    }
+    for (_j = 0, _len = culls.length; _j < _len; _j++) {
+      cull = culls[_j];
+      layers.remove(cull);
+    }
     prov = new Cesium.WebMapTileServiceImageryProvider({
       url: "//map1.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi?TIME=" + time,
-      layer: layer,
+      layer: layer_name,
       style: "",
       format: "image/jpeg",
       tileMatrixSetID: "EPSG4326_250m",
@@ -37,6 +52,10 @@ cesgibs_init = function() {
       name: 'Terra imagery',
       tooltip: "Daily MODIS Terra images",
       layer_name: "MODIS_Terra_CorrectedReflectance_TrueColor"
+    }, {
+      name: 'Aqua imagery',
+      tooltip: "Daily MODIS Aqua images",
+      layer_name: "MODIS_Aqua_CorrectedReflectance_TrueColor"
     }
   ];
   last_date = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime);

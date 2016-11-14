@@ -18,7 +18,8 @@ resolutions =
         tileMatrixSetID: "EPSG4326_2km"
         maximumLevel: 5
 
-cesgibs_imgadj = ->
+cesgibs_imgadj = (ele_id) ->
+
     # from the Cesium Sandcastle demo
     imageryLayers = viewer.imageryLayers
 
@@ -34,12 +35,15 @@ cesgibs_imgadj = ->
     Cesium.knockout.track viewModel
 
     # Bind the viewModel to the DOM elements of the UI that call for it.
-    toolbar = document.getElementById 'toolbar2'
+    toolbar = document.getElementById ele_id
+    toolbar.innerHTML = template
+    head = (document.getElementsByTagName "HEAD")[0]
+    head.insertAdjacentHTML 'beforeEnd', css
     Cesium.knockout.applyBindings viewModel, toolbar
 
     # Make the active imagery layer a subscriber of the viewModel.
     subscribeLayerParameter = (name) ->
-        Cesium.knockout.getObservable(viewModel, name).subscribe(
+        (Cesium.knockout.getObservable viewModel, name).subscribe(
             (newValue) ->
                 if imageryLayers.length > 0
                     layer = imageryLayers.get 0
@@ -98,6 +102,48 @@ map_time = (meta) ->
         return prov
 
     return func
+
+template = """
+<!-- table inserted by cesgibs.js (from cesgibs.coffee) -->
+<table><tbody><tr><td>Brightness</td>
+<td><input type="range" min="0" max="3" step="0.02" data-bind="value: brightness, valueUpdate: 'input'">
+<input type="text" size="5" data-bind="value: brightness"></td></tr>
+<tr><td>Contrast</td><td>
+<input type="range" min="0" max="3" step="0.02" data-bind="value: contrast, valueUpdate: 'input'">
+<input type="text" size="5" data-bind="value: contrast"></td></tr>
+<tr><td>Hue</td><td>
+<input type="range" min="0" max="3" step="0.02" data-bind="value: hue, valueUpdate: 'input'">
+<input type="text" size="5" data-bind="value: hue"></td></tr>
+<tr><td>Saturation</td><td>
+<input type="range" min="0" max="3" step="0.02" data-bind="value: saturation, valueUpdate: 'input'">
+<input type="text" size="5" data-bind="value: saturation"></td></tr>
+<tr><td>Gamma</td><td>
+<input type="range" min="0" max="3" step="0.02" data-bind="value: gamma, valueUpdate: 'input'">
+<input type="text" size="5" data-bind="value: gamma"></td></tr></tbody></table>
+"""
+
+css = """
+<style>
+    /* style inserted by cesgibs.js (from cesgibs.coffee) */
+    .cesgibs_imgadj {
+        background: rgba(90, 90, 90, 0.8);
+        padding: 4px;
+        border-radius: 4px;
+        font-size: 60%;
+    }
+    .cesgibs_imgadj input {
+        vertical-align: middle;
+        padding-top: 1px;
+        padding-bottom: 1px;
+    }
+    .cesgibs_imgadj td {
+        font-size: 60%;
+    }
+    .cesgibs_imgadj input[type=range] {
+        height: 8;
+    }
+</style>
+"""
 
 cesgibs_init = ->
 

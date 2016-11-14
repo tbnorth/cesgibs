@@ -18,9 +18,51 @@ resolutions =
         tileMatrixSetID: "EPSG4326_2km"
         maximumLevel: 5
 
-map_time = (meta) ->
+cesgibs_imgadj = ->
+    # from the Cesium Sandcastle demo
+    imageryLayers = viewer.imageryLayers
 
-    console.log "Building", meta.layer_name
+    # The viewModel tracks the state of our mini application.
+    viewModel =
+        brightness: 0
+        contrast: 0
+        hue: 0
+        saturation: 0
+        gamma: 0
+
+    # Convert the viewModel members into knockout observables.
+    Cesium.knockout.track viewModel
+
+    # Bind the viewModel to the DOM elements of the UI that call for it.
+    toolbar = document.getElementById 'toolbar2'
+    Cesium.knockout.applyBindings viewModel, toolbar
+
+    # Make the active imagery layer a subscriber of the viewModel.
+    subscribeLayerParameter = (name) ->
+        Cesium.knockout.getObservable(viewModel, name).subscribe(
+            (newValue) ->
+                if imageryLayers.length > 0
+                    layer = imageryLayers.get 0
+                    layer[name] = newValue
+        )
+
+    for attr of viewModel
+        subscribeLayerParameter attr
+        console.log attr
+
+    # Make the viewModel react to base layer changes.
+    updateViewModel = ->
+        if imageryLayers.length > 0
+            layer = imageryLayers.get 0
+            for attr of viewModel
+                viewModel[attr] = layer[attr]
+
+    imageryLayers.layerAdded.addEventListener updateViewModel
+    imageryLayers.layerRemoved.addEventListener updateViewModel
+    imageryLayers.layerMoved.addEventListener updateViewModel
+    updateViewModel()
+
+map_time = (meta) ->
 
     func = ->
         ## build function that returns an imagery provider for a particular day
@@ -74,6 +116,13 @@ cesgibs_init = ->
             res: '250m'
             format: "image/jpeg"
       ,
+        name: 'VIIRS imagery',
+        tooltip: "Daily VIIRS images"
+        meta:
+            layer_name: "VIIRS_SNPP_CorrectedReflectance_TrueColor"
+            res: '250m'
+            format: "image/jpeg"
+      ,
         name: 'Sea Surface Temp MUR',
         tooltip: "GHRSST_L4_MUR_Sea_Surface_Temperature"
         meta:
@@ -110,15 +159,11 @@ cesgibs_init = ->
     ## add a base layer icon
     arr = viewer.baseLayerPicker.viewModel.imageryProviderViewModels
     for layer in gibs_layers
-        console.log layer
-        console.log 'YY', layer.layer_name
         arr.push new Cesium.ProviderViewModel
             name: layer.name
             tooltip: layer.tooltip
             iconUrl: "http://cesiumjs.org/releases/1.26/Build/Cesium/Widgets/Images/ImageryProviders/mapboxSatellite.png"
             creationFunction: map_time layer.meta
-        console.log 'XX', layer.layer_name
-
     viewer.clock.onTick.addEventListener ->
         ## see if it's a different day, and check for daily layers
 

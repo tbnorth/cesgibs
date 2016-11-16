@@ -110,7 +110,6 @@
       head.insertAdjacentHTML('beforeEnd', this.css);
       Cesium.knockout.applyBindings(this.viewModel, toolbar);
       subscribeLayerParameter = function(name) {
-        console.log(_this.viewModel, name);
         return (Cesium.knockout.getObservable(_this.viewModel, name)).subscribe(function(newValue) {
           var layer;
           if (imageryLayers.length > 0) {

@@ -25,7 +25,7 @@ To use CesGibs, include two scripts in the HEAD of your page:
 Then, after you've constructed the Cesium viewer in your code, initialize
 CesGibs:
 ```{javascript}
-CesGibs.init(viewer);
+cesgibs = new CesGibs.CesGibs(viewer);
 ```
 
 If you want a control panel to alter Contrast / Gamma etc. in the baselayer imagery,
@@ -33,11 +33,10 @@ include an element like this in your HTML:
 ```{html}
 <div id="toolbar2" class="cesgibs_imgadj"></div>
 ```
-And after you call `CesGibs.init(viewer);` call `CesGibs.imgadj("toolbar2");`.
+And after you create `cesgibs` call `cesgibs.imgadj("toolbar2");`.
 If you don't want CesGibs to do any styling on the control panel, leave out the
 `class="cesgibs_imgadj"` part.
 
 CesGibs is written in [CoffeeScript](http://coffeescript.org/) with the javascript
-version included in this repository. The [coffeescript source](./cesgibs.coffee) is
-much easier to read ;-)
+version included in this repository.
 

@@ -139,7 +139,6 @@ class CesGibs
     
         # Make the active imagery layer a subscriber of the viewModel.
         subscribeLayerParameter = (name) =>
-            console.log @viewModel, name
             (Cesium.knockout.getObservable @viewModel, name).subscribe(
                 (newValue) ->
                     if imageryLayers.length > 0

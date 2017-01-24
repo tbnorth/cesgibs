@@ -209,7 +209,7 @@ class CesGibs
             arr.push new Cesium.ProviderViewModel
                 name: layer.name
                 tooltip: layer.tooltip
-                iconUrl: "http://cesiumjs.org/releases/1.26/Build/Cesium/Widgets/Images/ImageryProviders/mapboxSatellite.png"
+                iconUrl: "http://cesiumjs.org/releases/1.29/Build/Cesium/Widgets/Images/ImageryProviders/mapboxSatellite.png"
                 creationFunction: @map_time layer.meta
         viewer.clock.onTick.addEventListener ->
             ## see if it's a different day, and check for daily layers

@@ -49,8 +49,15 @@ class CesGibs
             layer_name: "MODIS_Aqua_Chlorophyll_A"
             res: '1km'
             format: "image/png"
+      ,
+        name: 'LS Month',
+        tooltip: "Landsat monthly"
+        meta:
+            layer_name: "Landsat_WELD_CorrectedReflectance_TrueColor_Global_Monthly"
+            res: '250m'
+            format: "image/jpeg"
     ]
-    
+ 
     resolutions:
         "250m":
             tileMatrixSetID: "EPSG4326_250m"
@@ -115,10 +122,10 @@ class CesGibs
     viewer: null
     
     imgadj: (ele_id) ->
-    
+
         # from the Cesium Sandcastle demo
         imageryLayers = viewer.imageryLayers
-    
+
         # The viewModel tracks the state of our mini application.
         @viewModel =
             brightness: 0
@@ -126,17 +133,17 @@ class CesGibs
             hue: 0
             saturation: 0
             gamma: 0
-    
+
         # Convert the viewModel members into knockout observables.
         Cesium.knockout.track @viewModel
-    
+
         # Bind the viewModel to the DOM elements of the UI that call for it.
         toolbar = document.getElementById ele_id
         toolbar.innerHTML = @template
         head = (document.getElementsByTagName "HEAD")[0]
         head.insertAdjacentHTML 'beforeEnd', @css
         Cesium.knockout.applyBindings @viewModel, toolbar
-    
+
         # Make the active imagery layer a subscriber of the viewModel.
         subscribeLayerParameter = (name) =>
             (Cesium.knockout.getObservable @viewModel, name).subscribe(
@@ -145,30 +152,30 @@ class CesGibs
                         layer = imageryLayers.get 0
                         layer[name] = newValue
             )
-    
+
         for attr of @viewModel
             subscribeLayerParameter attr
-    
+
         # Make the viewModel react to base layer changes.
         @updateViewModel = =>
             if imageryLayers.length > 0
                 layer = imageryLayers.get 0
                 for attr of @viewModel
                     @viewModel[attr] = layer[attr]
-    
+
         imageryLayers.layerAdded.addEventListener @updateViewModel
         imageryLayers.layerRemoved.addEventListener @updateViewModel
         imageryLayers.layerMoved.addEventListener @updateViewModel
         @updateViewModel()
-    
+
     map_time: (meta) ->
-    
+
         func = =>
             ## build function that returns an imagery provider for a particular day
-    
+
             time = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)
             time = "#{time.year}-#{('0'+time.month)[-2..]}-#{('0'+time.day)[-2..]}"
-    
+
             # remove any existing gibs layers
             layers = viewer.scene.imageryLayers
             culls = []
@@ -178,7 +185,7 @@ class CesGibs
                     culls.push layer
             for cull in culls
                 layers.remove cull
-    
+
             prov = new Cesium.WebMapTileServiceImageryProvider
                 url: "//map1.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi?TIME=#{time}",
                 layer: meta.layer_name,
@@ -189,20 +196,20 @@ class CesGibs
                 tileWidth: 256,
                 tileHeight: 256,
                 tilingScheme: gibs.GeographicTilingScheme()
-    
+
             prov._date_loader = func
-    
+
             viewer._cesgibs_active = true
-    
+
             return prov
-    
+
         return func
-    
+
     constructor: (cesium_viewer) ->
-    
+
         viewer = cesium_viewer
         last_date = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)
-    
+
         ## add a base layer icon
         arr = viewer.baseLayerPicker.viewModel.imageryProviderViewModels
         for layer in @gibs_layers
@@ -213,18 +220,18 @@ class CesGibs
                 creationFunction: @map_time layer.meta
         viewer.clock.onTick.addEventListener ->
             ## see if it's a different day, and check for daily layers
-    
+
             if not viewer._cesgibs_active
                 return
-    
+
             # see if 1 second has elapsed since last image change
             now = Date.now()
             if now - last_date_change_time < 1000
                 return
             last_date_change_time = now
-    
+
             layers = viewer.scene.imageryLayers
-    
+
             # when the day changes and we add a new layer, its "baselayerness"
             # is lost, despite attempt below, so switching to a non-gibs
             # baselayer doesn't unload our layer, so search layers for a
@@ -243,7 +250,7 @@ class CesGibs
                 viewer.scene.imageryLayers.remove our_layer
                 viewer._cesgibs_active = false
                 return
-    
+
             now = Cesium.JulianDate.toGregorianDate(viewer.clock.currentTime)
             day_change = (
                 now.day != last_date.day or
@@ -252,7 +259,7 @@ class CesGibs
             )
             if day_change
                 last_date = now
-    
+
                 for n in [0..layers.length]
                     layer = layers.get(n)
                     if layer and layer.imageryProvider._date_loader
@@ -263,6 +270,6 @@ class CesGibs
                         # this is insufficient / too soon, hence "our_layer" code above
                         # new_layer._isBaseLayer = true
                         break
-    
+
 window.CesGibs = {CesGibs: CesGibs}
 

@@ -57,7 +57,6 @@ class CesGibs
             res: '250m'
             format: "image/jpeg"
     ]
- 
     resolutions:
         "250m":
             tileMatrixSetID: "EPSG4326_250m"
@@ -71,7 +70,7 @@ class CesGibs
         "2km":
             tileMatrixSetID: "EPSG4326_2km"
             maximumLevel: 5
-    
+
     css: """
     <style>
         /* style inserted by cesgibs.js (from cesgibs.coffee) */
@@ -94,7 +93,7 @@ class CesGibs
         }
     </style>
     """
-    
+
     template: """
     <!-- table inserted by cesgibs.js (from cesgibs.coffee) -->
     <table><tbody><tr><td>Brightness</td>
@@ -113,14 +112,14 @@ class CesGibs
     <input type="range" min="0" max="3" step="0.02" data-bind="value: gamma, valueUpdate: 'input'">
     <input type="text" size="5" data-bind="value: gamma"></td></tr></tbody></table>
     """
-    
+
     ## time of last imagery change - track to limit request rate
     last_date_change_time: Date.now()
     ## date when imagery last changed
     last_date: null
-    
+
     viewer: null
-    
+
     imgadj: (ele_id) ->
 
         # from the Cesium Sandcastle demo
@@ -187,7 +186,7 @@ class CesGibs
                 layers.remove cull
 
             prov = new Cesium.WebMapTileServiceImageryProvider
-                url: "//map1.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi?TIME=#{time}",
+                url: "https://map1.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi?TIME=#{time}",
                 layer: meta.layer_name,
                 style: "",
                 format: meta.format,
